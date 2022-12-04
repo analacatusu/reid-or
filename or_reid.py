@@ -1,13 +1,10 @@
 import os.path
-
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import models
 from torchvision import transforms
-
-# from pytorch_grad_cam.pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from transformations import SquarePad2
 import torchvision
 from dataset2 import ReIDDataset
@@ -16,16 +13,13 @@ from torch.utils.data import DataLoader
 from sklearn.metrics import confusion_matrix
 import pandas as pd
 import seaborn as sn
-# from pytorch_grad_cam.pytorch_grad_cam.grad_cam import GradCAM
 import matplotlib.pyplot as plt
 import numpy
 import pickle
 import torchmetrics
 from PIL import Image
 import cv2
-# from pytorch_grad_cam.pytorch_grad_cam.utils.image import show_cam_on_image
 from grad_cam import grad_cam
-# from torchcam.methods import GradCAM
 
 
 ids_and_names = {
@@ -85,7 +79,7 @@ def wrongly_classified(im_paths, correct_ones, ids, preds=None):
                 predicts_wrong.append(ids_and_names[preds[i].item()])
 
 
-class LitModel(pl.LightningModule):
+class REIDModel(pl.LightningModule):
     def __init__(self, hparams):
         super().__init__()
         self.model = models.resnet50(pretrained=True)
@@ -104,26 +98,15 @@ class LitModel(pl.LightningModule):
         x = self.model.layer4(x)
         x = self.model.avgpool(x)
         x = torch.squeeze(x)
-        x = self.classifier(x)  # use our classifier.
+        x = self.classifier(x) 
         return x
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(list(self.model.parameters()), lr=self.params['lr'], weight_decay=self.params['weight_decay'])
         return optimizer
 
-    def training_step(self, batch, batch_idx):
-        imgs = batch['image']
-        ids = batch['id']
-        im_path = batch['im_path']
-        roles = batch['role']
-        outputs = self.forward(imgs)
-        loss = F.cross_entropy(outputs, ids)
-        _, preds = torch.max(outputs, 1)
-        acc = preds.eq(ids).sum().float() / ids.size(0)
-
-        ## training step nn lightning before log
-        if self.model.train() and self.current_epoch == 2:
-            for j in range(self.params["batch_size"]):
+    def grad_cam_overlay(roles, params, imgs, ids, im_path):
+            for j in range(params["batch_size"]):
                 if roles[j] != "patient":
                     continue
                 input_tensor = torch.tensor(imgs[j], requires_grad=True)
@@ -137,7 +120,19 @@ class LitModel(pl.LightningModule):
                 out_path = out_path + im_path[j].split("/")[-4]
                 out_path = project_path / f"{out_path}_nr{j}.jpg"
                 cv2.imwrite(str(out_path), im_array)
+                
+    def training_step(self, batch, batch_idx):
+        imgs = batch['image']
+        ids = batch['id']
+        im_path = batch['im_path']
+        roles = batch['role']
+        outputs = self.forward(imgs)
+        loss = F.cross_entropy(outputs, ids)
+        _, preds = torch.max(outputs, 1)
+        acc = preds.eq(ids).sum().float() / ids.size(0)
 
+        if self.current_epoch == 2:
+            self.grad_cam_overlay(roles, self.params, imgs, ids, im_path)
 
         self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
         self.log("train_acc", 100 * acc, prog_bar=True, on_step=False, on_epoch=True)
@@ -152,34 +147,23 @@ class LitModel(pl.LightningModule):
         _, preds_val = torch.max(outputs_val, 1)
         acc_val = preds_val.eq(ids_val).sum().float() / ids_val.size(0)
 
-        # correct_ones_val = preds_val.eq(ids_val)
-        # im_paths = batch['im_path']
-        #
-        # if self.current_epoch >= self.params["nr_epochs"] / 2:
-        #     if take_1 == take_1_done and take_5 == take_5_done:
-        #         pass
-        #     else:
-        #         pass
-        #         # wrongly_classified(im_paths, correct_ones_val, ids_val, preds=preds_val)
-        #         # correctly_classified(im_paths, correct_ones_val, ids_val, preds=None)
-
         self.log("val_loss", loss_val, prog_bar=True, on_step=False, on_epoch=True)
         self.log("val_acc", 100 * acc_val, prog_bar=True, on_step=False, on_epoch=True)
 
         return {'val_loss': loss_val, 'val_acc': acc_val, 'cf_preds': preds_val, 'cf_labels': ids_val}
 
-    # def validation_epoch_end(self, outputs):
-    #     preds_val = torch.cat([tmp['cf_preds'] for tmp in outputs])
-    #     targets = torch.cat([tmp['cf_labels'] for tmp in outputs])
-    #     confusion_matrix = torchmetrics.functional.confusion_matrix(preds_val, targets, num_classes=5, normalize='true')
-    #
-    #     df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(),
-    #                          index=[ids_and_names[i] for i in range(self.params['num_classes'])],
-    #                          columns=[ids_and_names[i] for i in range(self.params['num_classes'])])
-    #
-    #     plt.figure(figsize=(12, 7))
-    #     sn.heatmap(df_cm, annot=True, fmt='.2%')
-    #     plt.savefig(f'cf_matrix_trainwvalid_{self.current_epoch + 1}.png')
+    def validation_epoch_end(self, outputs):
+        preds_val = torch.cat([tmp['cf_preds'] for tmp in outputs])
+        targets = torch.cat([tmp['cf_labels'] for tmp in outputs])
+        confusion_matrix = torchmetrics.functional.confusion_matrix(preds_val, targets, num_classes=5, normalize='true')
+    
+        df_cm = pd.DataFrame(confusion_matrix.cpu().numpy(),
+                             index=[ids_and_names[i] for i in range(self.params['num_classes'])],
+                             columns=[ids_and_names[i] for i in range(self.params['num_classes'])])
+    
+        plt.figure(figsize=(12, 7))
+        sn.heatmap(df_cm, annot=True, fmt='.2%')
+        plt.savefig(f'cf_matrix_trainwvalid_{self.current_epoch + 1}.png')
 
 
 class ReidData(pl.LightningDataModule):
@@ -227,7 +211,7 @@ if __name__ == '__main__':
         "resolution": 224
     }
 
-    model = LitModel(hparams)
+    model = REIDModel(hparams)
     data = ReidData(hparams["batch_size"])
     data.setup()
     trainer = pl.Trainer(
@@ -249,7 +233,7 @@ if __name__ == '__main__':
     print("saved model")
 
     torch.save(model.state_dict(), 'model.pth')
-    model_state = LitModel(hparams)
+    model_state = REIDModel(hparams)
     model_state.load_state_dict(torch.load('model.pth'))
 
     df_path = Path("/tmp/pycharm_project_751")

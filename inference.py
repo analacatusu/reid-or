@@ -7,7 +7,7 @@ import pickle
 import os
 from torchvision import transforms
 from transformations import SquarePad2
-from or_reid import LitModel
+from or_reid import REIDModel
 import torch
 from PIL import Image
 
@@ -55,8 +55,6 @@ def func1(bb_dict):
             bounding_boxx.append(values)
     return bounding_boxx
 
-# filename = 'finalized_model.pkl'
-# model = pickle.load(open(filename, 'rb'))
 hparams = {
         "batch_size": 16,
         "lr": 0.0002,
@@ -66,10 +64,8 @@ hparams = {
         "resolution": 224
     }
 model2 = torch.load('model.pt')
-print("load1")
-model_state = LitModel(hparams)
+model_state = REIDModel(hparams)
 model_state.load_state_dict(torch.load('model.pth'))
-print("load2")
 model2.eval()
 model_state.eval()
 
