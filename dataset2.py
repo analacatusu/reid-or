@@ -1,12 +1,4 @@
-import pickle
-import numpy as np
-from torch.utils.data import Dataset, DataLoader
-import os
-import torch
-from skimage import io, transform
-import matplotlib.pyplot as plt
-from torchvision import transforms, utils
-from pathlib import Path
+from torch.utils.data import Dataset
 import pandas as pd
 from PIL import Image
 

@@ -6,7 +6,6 @@ import torch.nn.functional as F
 from torchvision import models
 from torchvision import transforms
 from transformations import SquarePad2
-import torchvision
 from dataset2 import ReIDDataset
 from pathlib import Path
 from torch.utils.data import DataLoader

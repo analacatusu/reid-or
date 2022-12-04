@@ -1,9 +1,5 @@
 import json
-import pickle
-import threading
 from pathlib import Path
-from time import sleep
-
 import numpy as np
 import open3d as o3d
 import open3d.visualization.gui as gui

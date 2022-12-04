@@ -1,4 +1,3 @@
-    
 from pathlib import Path
 from dataset2 import ReIDDataset
 import pandas as pd

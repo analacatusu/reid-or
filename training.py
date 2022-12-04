@@ -3,16 +3,14 @@ from __future__ import print_function, division
 import numpy
 import torch
 import matplotlib.pyplot as plt
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms, utils
+from torch.utils.data import DataLoader
+from torchvision import transforms
 from models import *
-from transformations import Rescale, RandomVerticalFlip, RandomHorizontalFlip, Normalize, ToTensor
+from transformations import SquarePad2
 import torch.optim as optim
 from pathlib import Path
-from dataset import ReIDDataset, show_batch, debug
+from dataset2 import ReIDDataset
 from torch.utils.tensorboard import SummaryWriter
-from sklearn.model_selection import train_test_split
-from torch.utils.data import Subset
 from PIL import Image
 from tqdm import tqdm
 from sklearn.metrics import confusion_matrix
@@ -66,19 +64,21 @@ if __name__ == '__main__':
     writer = SummaryWriter(log_dir=str(log_dir_path))
     project_path = Path("/tmp/pycharm_project_751")
     root_path = Path("/tmp/pycharm_project_751/inputs")
-    train_path = root_path / "train"
-    val_path = root_path / "val"
-    datasets = {}
-    reid_dataset_train = ReIDDataset(root_dir=str(train_path),
-                                     transform=transforms.Compose([
-                                         Rescale(128),
-                                         RandomVerticalFlip(0.5),
-                                         RandomHorizontalFlip(0.9),
-                                         ToTensor(),
-                                         Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-                                     ]))
+    df_path = Path("/tmp/pycharm_project_751")
+    df_train_path = df_path / 'df_train.pkl'
+    df_val_path = df_path / 'df_val.pkl'
 
-    print(len(reid_dataset_train))
+    datasets = {}
+    transform = transforms.Compose([
+            SquarePad2(),
+            transforms.Resize((128, 128)),
+            transforms.RandomVerticalFlip(0.5),
+            transforms.RandomHorizontalFlip(0.9),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+        ])
+
+    reid_dataset_train = ReIDDataset(root_dir=str(df_train_path), transform=transform)
 
     hparams = {
         "batch_size_train": 32,
@@ -167,14 +167,6 @@ if __name__ == '__main__':
 
     writer.flush()
     writer.close()
-
-    plt.plot(train_acc_history)
-    plt.plot(train_loss_history)
-    plt.title(f"SimpleReID - {hparams['nr_epochs']} epochs training")
-    plt.xlabel('iteration')
-    plt.ylabel('acc/loss')
-    plt.legend(['acc-train', 'loss-train', 'acc-val', 'loss-val'])
-    plt.show()
 
 
 

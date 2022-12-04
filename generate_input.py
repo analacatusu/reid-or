@@ -1,19 +1,11 @@
 import json
 import pickle
-import threading
 from pathlib import Path
-from time import sleep
-import numpy as np
-import open3d as o3d
-import open3d.visualization.gui as gui
-import open3d.visualization.rendering as rendering
 from tqdm import tqdm
-from PIL import Image
 import cv2
 import os
 from collections import defaultdict
-import pandas as pd
-from utils import load_timestamp_infos, human_pose_to_mesh_and_joints, load_gt_role_labels, coord_transform_human_pose_tool_to_inm
+from utils import load_timestamp_infos, load_gt_role_labels
 
 
 
@@ -45,7 +37,7 @@ def _default():
     return -1
 
 
-def func1(bb_dict):
+def refine_bb(bb_dict):
     bounding_boxx = []
     for key, values in bb_dict.items():
         if key.startswith("human") or key.startswith("Patient"):
@@ -143,8 +135,6 @@ if __name__ == '__main__':
     #                  "anaesthetist":"chantal"
     #                  }
 
-    prepare_df = []
-
     if TAKE_IDX == 1:
         names_and_trackidx = defaultdict(list)
     else:
@@ -229,7 +219,7 @@ if __name__ == '__main__':
             if bb_path.exists():
                 with bb_path.open() as f:
                     bb_dict = json.load(f)
-                    bounding_boxes = func1(bb_dict)
+                    bounding_boxes = refine_bb(bb_dict)
             for bb in bounding_boxes:
                 o_xmin, o_xmax, o_ymin, o_ymax, track_idx = bb
                 if not bb_in_range(o_xmin,o_xmax,o_ymin,o_ymax,imx,imy):

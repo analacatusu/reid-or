@@ -141,37 +141,38 @@ def find_role(index, name):
                 return k
 
 def construct_pd(root_dir):
+    prepare_df = []
     for (root, dirs, files) in os.walk(root_dir, topdown=True):
-    	dirs.sort()
-    if len(files) != 0:
-        for file in files:
-            im_path = os.path.join(root, file)
-            take_idx = root.split('/')[-3]
-            index = take_idx.split('_')[-1]
-            index = int(index) - 1
-            string_id = root.split('/')[-1]
-            string_id = string_id.split('_')[-1]
-            int_id = -1
-            name = ""
-            role= ""
+        dirs.sort()
+        if len(files) != 0:
+            for file in files:
+                im_path = os.path.join(root, file)
+                take_idx = root.split('/')[-3]
+                index = take_idx.split('_')[-1]
+                index = int(index) - 1
+                string_id = root.split('/')[-1]
+                string_id = string_id.split('_')[-1]
+                int_id = -1
+                name = ""
+                role= ""
             for i, l in enumerate(IDS_list):
                 if l[index] == int(string_id):
                     int_id = i
                     name = NAMES_list[i]
                     role= find_role(index, name)
-            	     prepare_df.append([im_path, int_id, name, role])
+                    prepare_df.append([im_path, int_id, name, role])
             	     
     return prepare_df        	     
 
 if __name__ == '__main__':
-root_dir = Path("/home/anaml/inputs/val")
-prepare_df = construct_pd(root_dir)
-df_array = np.array(prepare_df)
-df = pd.DataFrame(df_array, columns=['im_path', 'label', 'name', 'role'])
-df.to_pickle("/tmp/pycharm_project_751/df_val.pkl")
+    root_dir = Path("/home/anaml/inputs/val")
+    prepare_df = construct_pd(root_dir)
+    df_array = np.array(prepare_df)
+    df = pd.DataFrame(df_array, columns=['im_path', 'label', 'name', 'role'])
+    df.to_pickle("/tmp/pycharm_project_751/df_val.pkl")
 
-root_dir = Path("/home/anaml/inputs/train")
-prepare_df = construct_pd(root_dir)
-df_array = np.array(prepare_df)
-df = pd.DataFrame(df_array, columns=['im_path', 'label', 'name', 'role'])
-df.to_pickle("/tmp/pycharm_project_751/df_train.pkl")
+    root_dir = Path("/home/anaml/inputs/train")
+    prepare_df = construct_pd(root_dir)
+    df_array = np.array(prepare_df)
+    df = pd.DataFrame(df_array, columns=['im_path', 'label', 'name', 'role'])
+    df.to_pickle("/tmp/pycharm_project_751/df_train.pkl")

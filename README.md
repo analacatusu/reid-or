@@ -5,13 +5,19 @@
 This project solves the person re-identification problem on the 4D-OR data set. 
 
 ## Quick start
+ 
+Install all the dependencies via
 
-Before training the re-ID network, one needs to generate the input by running: 
+```
+pip install -r requirements.txt
+```
+
+Before training the re-ID network, generate the input by running: 
 ```
 python generate_input.py
 ```
 
-Afterward one can train the model by running:
+Afterward train the model by running:
 ```
 python or_reid.py
 ```
