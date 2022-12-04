@@ -105,12 +105,12 @@ class REIDModel(pl.LightningModule):
         optimizer = torch.optim.Adam(list(self.model.parameters()), lr=self.params['lr'], weight_decay=self.params['weight_decay'])
         return optimizer
 
-    def grad_cam_overlay(roles, params, imgs, ids, im_path):
+    def grad_cam_overlay(roles, params, imgs, ids, im_path, model):
             for j in range(params["batch_size"]):
                 if roles[j] != "patient":
                     continue
                 input_tensor = torch.tensor(imgs[j], requires_grad=True)
-                image = grad_cam(self.model, imgs[j], target_layers, ids[j])
+                image = grad_cam(model, imgs[j], target_layers, ids[j])
                 image = image[:, :, ::-1]
                 im_array = numpy.asarray(image)
                 out_path = im_path[j].split("/")[-1]
@@ -132,7 +132,7 @@ class REIDModel(pl.LightningModule):
         acc = preds.eq(ids).sum().float() / ids.size(0)
 
         if self.current_epoch == 2:
-            self.grad_cam_overlay(roles, self.params, imgs, ids, im_path)
+            self.grad_cam_overlay(roles, self.params, imgs, ids, im_path, self.model)
 
         self.log("train_loss", loss, prog_bar=True, on_step=False, on_epoch=True)
         self.log("train_acc", 100 * acc, prog_bar=True, on_step=False, on_epoch=True)
@@ -222,60 +222,8 @@ if __name__ == '__main__':
     target_layers = model.model.layer4[-1]
 
     trainer.fit(model,train_dataloaders=data.train_dataloader(),val_dataloaders=data.val_dataloader())
-
-    filename = 'finalized_model.pkl'
-    pickle.dump(model, open(filename, 'wb'))
-
-    loaded_model = pickle.load(open(filename, 'rb'))
-
-    torch.save(model, 'model.pt')
-    model2 = torch.load('model.pt')
-    print("saved model")
-
     torch.save(model.state_dict(), 'model.pth')
-    model_state = REIDModel(hparams)
-    model_state.load_state_dict(torch.load('model.pth'))
-
-    df_path = Path("/tmp/pycharm_project_751")
-    df_val_path = df_path / 'df_val.pkl'
-
-    transform = transforms.Compose([
-        SquarePad2(),
-        transforms.Resize((224, 224)),
-        transforms.RandomVerticalFlip(0.5),
-        transforms.RandomHorizontalFlip(0.9),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
-
-    reid_dataset_val = ReIDDataset(path=str(df_val_path), transform=transform)
-
-    dataloader_val = DataLoader(reid_dataset_val, batch_size=1, shuffle=False, num_workers=8,
-                                drop_last=True)
-
-    path = Path('/tmp/pycharm_project_751/df_take_1.pkl')
-    path2 = Path('/tmp/pycharm_project_751/df_take_5.pkl')
-    df1 = pd.read_pickle(str(path))
-    df5 = pd.read_pickle(str(path2))
-
-
-    for i_batch, sample in enumerate(dataloader_val):
-        image = sample['image']
-        image_path = sample['im_path']
-        output = model(image).data.cpu().numpy()
-        index1 = df1.index[df1['input_path'] == str(image_path)].tolist()
-        index5 = df5.index[df5['input_path'] == str(image_path)].tolist()
-        if len(index1) != 0:
-            df1.iloc[index1[0]]['label'] = output
-
-        if len(index1) != 0:
-            df5.iloc[index5[0]]['label'] = output
-
-        ### draw bb and label on df1 or df5 de image path && save it in a new folder
-
-    df1.to_pickle("/tmp/pycharm_project_751/df_take_1_labeled.pkl")
-    df5.to_pickle("/tmp/pycharm_project_751/df_take_5_labeled.pkl")
-
+    
     # with open("wrongly_classified.pkl", "wb") as f:
     #     pickle.dump(image_paths_wrong, f)
     #
