@@ -5,6 +5,9 @@ from torchvision import transforms, utils
 import torchvision.transforms.functional as F
 import cv2
 
+'''
+Old transformations, just SquarePad2 is needed
+'''
 
 class SquarePad2(object):
 
@@ -15,10 +18,6 @@ class SquarePad2(object):
         vp = int((max_wh - h) / 2)
         padding = (hp, vp, hp, vp)
         im = F.pad(image, padding, 0, 'constant')
-        # image = np.array(im)
-        # to_save = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
-        # cv2.imwrite("example_image.png", to_save)
-        # exit(0)
         image = np.array(im)
         rd = np.random.randint(-50, -20, dtype=int)
         M = np.float32([[1, 0, 0], [0, 1, 0]])

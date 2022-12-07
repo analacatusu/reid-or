@@ -20,13 +20,14 @@ from pytorch_grad_cam.pytorch_grad_cam.grad_cam import GradCAM
 from pytorch_grad_cam.pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
 from pytorch_grad_cam.pytorch_grad_cam.utils.image import show_cam_on_image
 import cv2
-
 import pickle
-
 # Ignore warnings
 import warnings
 warnings.filterwarnings("ignore")
 
+'''
+Old training in PyTorch
+'''
 
 def matplotlib_imshow(img):
     MEAN = torch.tensor([0.485, 0.456, 0.406]).to(device)

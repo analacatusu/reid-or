@@ -1,4 +1,3 @@
-import os.path
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -39,14 +38,12 @@ predicts_wrong = []
 image_paths_correct = []
 names_correct = []
 
-
+# check the correct predictions
 def correctly_classified(im_paths, correct_ones, ids, preds=None):
     for i, id in enumerate(ids):
         if correct_ones[i]:
             take_nr = im_paths[i].split('/')[-4]
-            print(f"{take_nr=}")
             take_nr = take_nr.split('_')[-1]
-            print(f"{take_nr=}")
             take_nr = int(take_nr)
             if take_nr == 1 and take_1[id.item()] == 0:
                 take_1[id.item()] = 1
@@ -57,14 +54,12 @@ def correctly_classified(im_paths, correct_ones, ids, preds=None):
                 image_paths_correct.append(im_paths[i])
                 names_correct.append(ids_and_names[id.item()])
 
-
+# check the wrong predictions
 def wrongly_classified(im_paths, correct_ones, ids, preds=None):
     for i, id in enumerate(ids):
         if not correct_ones[i]:
             take_nr = im_paths[i].split('/')[-4]
-            print(f"{take_nr=}")
             take_nr = take_nr.split('_')[-1]
-            print(f"{take_nr=}")
             take_nr = int(take_nr)
             if take_nr == 1 and take_1[id.item()] == 0:
                 take_1[id.item()] = 1
@@ -106,9 +101,6 @@ class REIDModel(pl.LightningModule):
 
     def grad_cam_overlay(roles, params, imgs, ids, im_path, model):
             for j in range(params["batch_size"]):
-                if roles[j] != "patient":
-                    continue
-                input_tensor = torch.tensor(imgs[j], requires_grad=True)
                 image = grad_cam(model, imgs[j], target_layers, ids[j])
                 image = image[:, :, ::-1]
                 im_array = numpy.asarray(image)
@@ -141,10 +133,15 @@ class REIDModel(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         imgs_val = batch['image']
         ids_val = batch['id']
+        # roles_val = batch['role']
+        # im_path_val = batch['im_path']
         outputs_val = self.forward(imgs_val)
         loss_val = F.cross_entropy(outputs_val, ids_val)
         _, preds_val = torch.max(outputs_val, 1)
         acc_val = preds_val.eq(ids_val).sum().float() / ids_val.size(0)
+        
+        # if self.current_epoch == 2:
+        #     self.grad_cam_overlay(roles_val, self.params, imgs_val, ids_val, im_path_val, self.model)
 
         self.log("val_loss", loss_val, prog_bar=True, on_step=False, on_epoch=True)
         self.log("val_acc", 100 * acc_val, prog_bar=True, on_step=False, on_epoch=True)

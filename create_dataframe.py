@@ -17,12 +17,7 @@ for k,v in name_to_trackidx.items():
     NAMES_list.append(k)
 
 """
-index: [file path, label/person id, role]
-len dataset is len of table
-list of lists([file path, label/person id, role])
-use a dataframe
-look at pathlib -> iterdir, Path.glob
-put everything in the dataframe
+Construct a pandas dataframe for the dataset
 """
 
 ### take_1

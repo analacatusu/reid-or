@@ -5,6 +5,9 @@ from torch.nn import init
 from torch.nn import functional as F
 from torchvision import models
 
+'''
+Old models for the old training in PyTorch
+'''
 
 class ResNet50(nn.Module):
     def __init__(self, res4_stride=1, **kwargs):
