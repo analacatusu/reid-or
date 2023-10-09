@@ -2,7 +2,7 @@
 
 ## About the project
 
-This project solves the person re-identification problem on the 4D-OR data set. 
+This project tackles the person re-identification problem on the 4D-OR data set. 
 
 ## Quick start
  
