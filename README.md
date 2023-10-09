@@ -21,4 +21,4 @@ Afterward train the model by running:
 ```
 python or_reid.py
 ```
-
+For a quick demo of the results, checkout this [YouTube Video](https://youtu.be/ypnxUCs5_XU?feature=shared)
